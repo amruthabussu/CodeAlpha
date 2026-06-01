@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Basic E-Commerce Site</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, sans-serif;
+}
+
+body{
+    background:#f4f4f4;
+    padding:20px;
+}
+
+header{
+    background:#222;
+    color:white;
+    padding:15px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+header h1{
+    font-size:28px;
+}
+
+.cart-btn{
+    background:orange;
+    color:white;
+    border:none;
+    padding:10px 15px;
+    cursor:pointer;
+    border-radius:5px;
+}
+
+.container{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:20px;
+    margin-top:20px;
+}
+
+.card{
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,0.1);
+    text-align:center;
+}
+
+.card img{
+    width:100%;
+    height:200px;
+    object-fit:cover;
+    border-radius:10px;
+}
+
+.card h3{
+    margin:10px 0;
+}
+
+.card p{
+    color:green;
+    font-size:18px;
+    margin-bottom:10px;
+}
+
+button{
+    padding:10px 15px;
+    border:none;
+    background:#007bff;
+    color:white;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#0056b3;
+}
+
+#cartSection,
+#loginSection,
+#registerSection,
+#orderSection{
+    background:white;
+    padding:20px;
+    margin-top:30px;
+    border-radius:10px;
+}
+
+input{
+    width:100%;
+    padding:10px;
+    margin:10px 0;
+}
+
+.cart-item{
+    display:flex;
+    justify-content:space-between;
+    margin:10px 0;
+    border-bottom:1px solid #ccc;
+    padding-bottom:10px;
+}
+
+.hidden{
+    display:none;
+}
+
+.total{
+    font-size:22px;
+    margin-top:15px;
+    color:green;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>My E-Commerce Store</h1>
+    <button class="cart-btn" onclick="toggleCart()">
+        Cart (<span id="cartCount">0</span>)
+    </button>
+</header>
+
+<!-- PRODUCTS -->
+<div class="container" id="productContainer"></div>
+
+<!-- PRODUCT DETAILS -->
+<div id="productDetails" class="hidden"></div>
+
+<!-- CART -->
+<div id="cartSection" class="hidden">
+    <h2>Shopping Cart</h2>
+    <div id="cartItems"></div>
+    <h3 class="total">Total: $<span id="totalPrice">0</span></h3>
+    <button onclick="placeOrder()">Place Order</button>
+</div>
+
+<!-- LOGIN -->
+<div id="loginSection">
+    <h2>User Login</h2>
+    <input type="email" id="loginEmail" placeholder="Enter Email">
+    <input type="password" id="loginPassword" placeholder="Enter Password">
+    <button onclick="login()">Login</button>
+</div>
+
+<!-- REGISTER -->
+<div id="registerSection">
+    <h2>User Registration</h2>
+    <input type="text" id="regName" placeholder="Enter Name">
+    <input type="email" id="regEmail" placeholder="Enter Email">
+    <input type="password" id="regPassword" placeholder="Enter Password">
+    <button onclick="register()">Register</button>
+</div>
+
+<!-- ORDERS -->
+<div id="orderSection">
+    <h2>Order History</h2>
+    <div id="orders"></div>
+</div>
+
+<script>
+
+// PRODUCTS DATABASE
+const products = [
+{
+    id:1,
+    name:"Laptop",
+    price:900,
+    image:"https://via.placeholder.com/300x200",
+    description:"High performance laptop"
+},
+{
+    id:2,
+    name:"Smartphone",
+    price:500,
+    image:"https://via.placeholder.com/300x200",
+    description:"Latest smartphone model"
+},
+{
+    id:3,
+    name:"Headphones",
+    price:100,
+    image:"https://via.placeholder.com/300x200",
+    description:"Noise cancelling headphones"
+},
+{
+    id:4,
+    name:"Watch",
+    price:150,
+    image:"https://via.placeholder.com/300x200",
+    description:"Stylish smart watch"
+}
+];
+
+// DATABASE STORAGE
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+let users = JSON.parse(localStorage.getItem("users")) || [];
+let orders = JSON.parse(localStorage.getItem("orders")) || [];
+
+// DISPLAY PRODUCTS
+function displayProducts(){
+    const container = document.getElementById("productContainer");
+
+    container.innerHTML = "";
+
+    products.forEach(product => {
+        container.innerHTML += `
+        <div class="card">
+            <img src="${product.image}">
+            <h3>${product.name}</h3>
+            <p>$${product.price}</p>
+
+            <button onclick="viewDetails(${product.id})">
+                View Details
+            </button>
+
+            <button onclick="addToCart(${product.id})">
+                Add To Cart
+            </button>
+        </div>
+        `;
+    });
+}
+
+// VIEW PRODUCT DETAILS
+function viewDetails(id){
+    const product = products.find(p => p.id === id);
+
+    const details = document.getElementById("productDetails");
+
+    details.classList.remove("hidden");
+
+    details.innerHTML = `
+        <h2>${product.name}</h2>
+        <img src="${product.image}" width="300">
+        <p>${product.description}</p>
+        <h3>Price: $${product.price}</h3>
+        <br>
+    `;
+}
+
+// ADD TO CART
+function addToCart(id){
+    const product = products.find(p => p.id === id);
+
+    cart.push(product);
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+
+    updateCart();
+    
+    alert("Product added to cart");
+}
+
+// UPDATE CART
+function updateCart(){
+    document.getElementById("cartCount").innerText = cart.length;
+
+    const cartItems = document.getElementById("cartItems");
+
+    cartItems.innerHTML = "";
+
+    let total = 0;
+
+    cart.forEach((item,index) => {
+
+        total += item.price;
+
+        cartItems.innerHTML += `
+        <div class="cart-item">
+            <span>${item.name}</span>
+            <span>$${item.price}</span>
+            <button onclick="removeFromCart(${index})">
+                Remove
+            </button>
+        </div>
+        `;
+    });
+
+    document.getElementById("totalPrice").innerText = total;
+}
+
+// REMOVE CART ITEM
+function removeFromCart(index){
+
+    cart.splice(index,1);
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+
+    updateCart();
+}
+
+// TOGGLE CART
+function toggleCart(){
+    document.getElementById("cartSection")
+    .classList.toggle("hidden");
+}
+
+// REGISTER USER
+function register(){
+
+    const name = document.getElementById("regName").value;
+    const email = document.getElementById("regEmail").value;
+    const password = document.getElementById("regPassword").value;
+
+    if(name === "" || email === "" || password === ""){
+        alert("Please fill all fields");
+        return;
+    }
+
+    users.push({
+        name,
+        email,
+        password
+    });
+
+    localStorage.setItem("users", JSON.stringify(users));
+
+    alert("Registration Successful");
+}
+
+// LOGIN USER
+function login(){
+
+    const email = document.getElementById("loginEmail").value;
+    const password = document.getElementById("loginPassword").value;
+
+    const user = users.find(u => 
+        u.email === email && u.password === password
+    );
+
+    if(user){
+        alert("Login Successful");
+    }else{
+        alert("Invalid Credentials");
+    }
+}
+
+// PLACE ORDER
+function placeOrder(){
+
+    if(cart.length === 0){
+        alert("Cart is empty");
+        return;
+    }
+
+    let total = cart.reduce((sum,item) => sum + item.price,0);
+
+    const order = {
+        items:[...cart],
+        total,
+        date:new Date().toLocaleString()
+    };
+
+    orders.push(order);
+
+    localStorage.setItem("orders", JSON.stringify(orders));
+
+    cart = [];
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+
+    updateCart();
+
+    displayOrders();
+
+    alert("Order Placed Successfully");
+}
+
+// DISPLAY ORDERS
+function displayOrders(){
+
+    const orderDiv = document.getElementById("orders");
+
+    orderDiv.innerHTML = "";
+
+    orders.forEach(order => {
+
+        orderDiv.innerHTML += `
+        <div style="margin:15px 0; border-bottom:1px solid #ccc; padding:10px;">
+            <h3>Total: $${order.total}</h3>
+            <p>Date: ${order.date}</p>
+        </div>
+        `;
+    });
+}
+
+// INITIALIZE
+displayProducts();
+updateCart();
+displayOrders();
+
+</script>
+
+</body>
+</html>

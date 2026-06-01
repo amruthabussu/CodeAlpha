@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini Trello / Asana Clone</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, sans-serif;
+}
+
+body{
+    background:#f4f5f7;
+    padding:20px;
+}
+
+/* HEADER */
+
+header{
+    background:#026aa7;
+    color:white;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:20px;
+}
+
+header h1{
+    font-size:28px;
+}
+
+/* LAYOUT */
+
+.container{
+    display:grid;
+    grid-template-columns:300px 1fr;
+    gap:20px;
+}
+
+/* SIDEBAR */
+
+.sidebar{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    height:fit-content;
+}
+
+.sidebar h2{
+    margin-bottom:15px;
+}
+
+input, textarea, select{
+    width:100%;
+    padding:10px;
+    margin:10px 0;
+    border:1px solid #ccc;
+    border-radius:5px;
+}
+
+button{
+    padding:10px 15px;
+    border:none;
+    background:#0079bf;
+    color:white;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#005f8d;
+}
+
+/* BOARD */
+
+.board{
+    display:flex;
+    gap:20px;
+    overflow-x:auto;
+}
+
+/* COLUMN */
+
+.column{
+    background:#ebecf0;
+    width:300px;
+    min-height:500px;
+    padding:15px;
+    border-radius:10px;
+}
+
+.column h2{
+    margin-bottom:15px;
+}
+
+/* TASK CARD */
+
+.task{
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:15px;
+    box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
+
+.task h3{
+    margin-bottom:10px;
+}
+
+.task p{
+    margin-bottom:10px;
+    color:#555;
+}
+
+.assigned{
+    font-size:14px;
+    color:#0079bf;
+    margin-bottom:10px;
+}
+
+/* COMMENTS */
+
+.comments{
+    margin-top:10px;
+}
+
+.comment{
+    background:#f5f5f5;
+    padding:8px;
+    border-radius:5px;
+    margin-top:5px;
+    font-size:14px;
+}
+
+/* NOTIFICATIONS */
+
+.notifications{
+    background:white;
+    padding:15px;
+    margin-top:20px;
+    border-radius:10px;
+}
+
+.notification{
+    background:#e3f2fd;
+    padding:10px;
+    margin-top:10px;
+    border-radius:5px;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>Project Management Tool</h1>
+</header>
+
+<div class="container">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+        <h2>Create Project</h2>
+
+        <input type="text" id="projectName" placeholder="Project Name">
+
+        <button onclick="createProject()">
+            Create Project
+        </button>
+
+        <hr><br>
+
+        <h2>Create Task</h2>
+
+        <input type="text" id="taskTitle" placeholder="Task Title">
+
+        <textarea id="taskDesc" placeholder="Task Description"></textarea>
+
+        <input type="text" id="assignedTo" placeholder="Assign To">
+
+        <select id="taskStatus">
+            <option value="todo">To Do</option>
+            <option value="progress">In Progress</option>
+            <option value="done">Done</option>
+        </select>
+
+        <button onclick="createTask()">
+            Add Task
+        </button>
+
+    </div>
+
+    <!-- BOARD -->
+    <div class="board">
+
+        <!-- TODO -->
+        <div class="column" id="todo">
+            <h2>To Do</h2>
+        </div>
+
+        <!-- IN PROGRESS -->
+        <div class="column" id="progress">
+            <h2>In Progress</h2>
+        </div>
+
+        <!-- DONE -->
+        <div class="column" id="done">
+            <h2>Done</h2>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- NOTIFICATIONS -->
+
+<div class="notifications">
+
+    <h2>Notifications</h2>
+
+    <div id="notificationList"></div>
+
+</div>
+
+<script>
+
+/* DATABASE */
+
+let projects = JSON.parse(localStorage.getItem("projects")) || [];
+
+let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+/* CREATE PROJECT */
+
+function createProject(){
+
+    const name = document.getElementById("projectName").value;
+
+    if(name.trim() === ""){
+
+        alert("Enter project name");
+
+        return;
+    }
+
+    projects.push({
+        id:Date.now(),
+        name
+    });
+
+    localStorage.setItem(
+        "projects",
+        JSON.stringify(projects)
+    );
+
+    addNotification(
+        `New project created: ${name}`
+    );
+
+    alert("Project Created");
+
+    document.getElementById("projectName").value = "";
+}
+
+/* CREATE TASK */
+
+function createTask(){
+
+    const title = document.getElementById("taskTitle").value;
+
+    const desc = document.getElementById("taskDesc").value;
+
+    const assigned = document.getElementById("assignedTo").value;
+
+    const status = document.getElementById("taskStatus").value;
+
+    if(title.trim() === ""){
+
+        alert("Enter task title");
+
+        return;
+    }
+
+    const task = {
+
+        id:Date.now(),
+
+        title,
+
+        desc,
+
+        assigned,
+
+        status,
+
+        comments:[]
+
+    };
+
+    tasks.push(task);
+
+    localStorage.setItem(
+        "tasks",
+        JSON.stringify(tasks)
+    );
+
+    addNotification(
+        `Task assigned to ${assigned}`
+    );
+
+    displayTasks();
+
+    clearInputs();
+}
+
+/* DISPLAY TASKS */
+
+function displayTasks(){
+
+    document.getElementById("todo").innerHTML =
+    "<h2>To Do</h2>";
+
+    document.getElementById("progress").innerHTML =
+    "<h2>In Progress</h2>";
+
+    document.getElementById("done").innerHTML =
+    "<h2>Done</h2>";
+
+    tasks.forEach(task => {
+
+        let commentsHTML = "";
+
+        task.comments.forEach(comment => {
+
+            commentsHTML += `
+                <div class="comment">
+                    ${comment}
+                </div>
+            `;
+        });
+
+        const taskHTML = `
+
+        <div class="task">
+
+            <h3>${task.title}</h3>
+
+            <p>${task.desc}</p>
+
+            <div class="assigned">
+                Assigned To: ${task.assigned}
+            </div>
+
+            <button onclick="moveTask(${task.id})">
+                Move Task
+            </button>
+
+            <button onclick="deleteTask(${task.id})">
+                Delete
+            </button>
+
+            <div class="comments">
+
+                <h4>Comments</h4>
+
+                ${commentsHTML}
+
+                <input
+                    type="text"
+                    id="comment-${task.id}"
+                    placeholder="Add comment"
+                >
+
+                <button onclick="addComment(${task.id})">
+                    Comment
+                </button>
+
+            </div>
+
+        </div>
+
+        `;
+
+        document.getElementById(task.status)
+        .innerHTML += taskHTML;
+    });
+}
+
+/* MOVE TASK */
+
+function moveTask(id){
+
+    tasks = tasks.map(task => {
+
+        if(task.id === id){
+
+            if(task.status === "todo"){
+
+                task.status = "progress";
+
+            }else if(task.status === "progress"){
+
+                task.status = "done";
+
+            }else{
+
+                task.status = "todo";
+            }
+
+            addNotification(
+                `Task moved: ${task.title}`
+            );
+        }
+
+        return task;
+    });
+
+    localStorage.setItem(
+        "tasks",
+        JSON.stringify(tasks)
+    );
+
+    displayTasks();
+}
+
+/* DELETE TASK */
+
+function deleteTask(id){
+
+    tasks = tasks.filter(task => task.id !== id);
+
+    localStorage.setItem(
+        "tasks",
+        JSON.stringify(tasks)
+    );
+
+    displayTasks();
+
+    addNotification("Task deleted");
+}
+
+/* ADD COMMENT */
+
+function addComment(id){
+
+    const input =
+    document.getElementById(`comment-${id}`);
+
+    const text = input.value;
+
+    if(text.trim() === ""){
+
+        alert("Enter comment");
+
+        return;
+    }
+
+    tasks = tasks.map(task => {
+
+        if(task.id === id){
+
+            task.comments.push(text);
+
+            addNotification(
+                `New comment on ${task.title}`
+            );
+        }
+
+        return task;
+    });
+
+    localStorage.setItem(
+        "tasks",
+        JSON.stringify(tasks)
+    );
+
+    displayTasks();
+}
+
+/* NOTIFICATIONS */
+
+function addNotification(message){
+
+    const list =
+    document.getElementById("notificationList");
+
+    list.innerHTML += `
+
+    <div class="notification">
+
+        ${message}
+
+    </div>
+
+    `;
+}
+
+/* CLEAR INPUTS */
+
+function clearInputs(){
+
+    document.getElementById("taskTitle").value = "";
+
+    document.getElementById("taskDesc").value = "";
+
+    document.getElementById("assignedTo").value = "";
+}
+
+/* INITIAL LOAD */
+
+displayTasks();
+
+</script>
+
+</body>
+</html>

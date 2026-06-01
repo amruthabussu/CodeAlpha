@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Mini Social Media App</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, sans-serif;
+}
+
+body{
+    background:#f0f2f5;
+}
+
+/* HEADER */
+
+header{
+    background:#1877f2;
+    color:white;
+    padding:15px;
+    text-align:center;
+    font-size:28px;
+    font-weight:bold;
+}
+
+/* MAIN CONTAINER */
+
+.container{
+    width:90%;
+    max-width:1000px;
+    margin:20px auto;
+    display:grid;
+    grid-template-columns:300px 1fr;
+    gap:20px;
+}
+
+/* PROFILE SECTION */
+
+.profile{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,0.1);
+    height:fit-content;
+}
+
+.profile img{
+    width:120px;
+    height:120px;
+    border-radius:50%;
+    object-fit:cover;
+    display:block;
+    margin:auto;
+}
+
+.profile h2{
+    text-align:center;
+    margin-top:10px;
+}
+
+.profile p{
+    text-align:center;
+    color:gray;
+    margin-top:5px;
+}
+
+.follow-btn{
+    width:100%;
+    margin-top:15px;
+    background:#1877f2;
+    color:white;
+    border:none;
+    padding:10px;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+/* POST SECTION */
+
+.feed{
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+}
+
+.create-post{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+
+textarea{
+    width:100%;
+    padding:10px;
+    resize:none;
+    border:1px solid #ccc;
+    border-radius:5px;
+}
+
+button{
+    margin-top:10px;
+    padding:10px 15px;
+    border:none;
+    background:#1877f2;
+    color:white;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+/* POSTS */
+
+.post{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+
+.post-header{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.post-header img{
+    width:50px;
+    height:50px;
+    border-radius:50%;
+}
+
+.post-content{
+    margin-top:15px;
+    font-size:18px;
+}
+
+.actions{
+    display:flex;
+    gap:20px;
+    margin-top:15px;
+}
+
+.actions button{
+    background:#eee;
+    color:black;
+}
+
+/* COMMENTS */
+
+.comments{
+    margin-top:15px;
+}
+
+.comment{
+    background:#f5f5f5;
+    padding:8px;
+    border-radius:5px;
+    margin-top:8px;
+}
+
+.comment-input{
+    display:flex;
+    gap:10px;
+    margin-top:10px;
+}
+
+.comment-input input{
+    flex:1;
+    padding:10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+    Mini Social Media App
+</header>
+
+<div class="container">
+
+    <!-- PROFILE -->
+    <div class="profile">
+
+        <img src="https://via.placeholder.com/150">
+
+        <h2 id="username">John Doe</h2>
+
+        <p id="bio">
+            Web Developer | Content Creator
+        </p>
+
+        <h3>
+            Followers:
+            <span id="followers">0</span>
+        </h3>
+
+        <button class="follow-btn" onclick="followUser()">
+            Follow
+        </button>
+
+    </div>
+
+    <!-- FEED -->
+    <div class="feed">
+
+        <!-- CREATE POST -->
+        <div class="create-post">
+
+            <h2>Create Post</h2>
+
+            <textarea
+                id="postText"
+                rows="4"
+                placeholder="What's on your mind?"
+            ></textarea>
+
+            <button onclick="createPost()">
+                Post
+            </button>
+
+        </div>
+
+        <!-- POSTS -->
+        <div id="postsContainer"></div>
+
+    </div>
+
+</div>
+
+<script>
+
+/* DATABASE */
+
+let followers = localStorage.getItem("followers") || 0;
+
+let posts = JSON.parse(localStorage.getItem("posts")) || [];
+
+/* UPDATE FOLLOWERS */
+
+document.getElementById("followers").innerText = followers;
+
+/* FOLLOW USER */
+
+function followUser(){
+
+    followers++;
+
+    localStorage.setItem("followers", followers);
+
+    document.getElementById("followers").innerText = followers;
+
+    alert("You followed this user");
+}
+
+/* CREATE POST */
+
+function createPost(){
+
+    const text = document.getElementById("postText").value;
+
+    if(text.trim() === ""){
+
+        alert("Write something");
+
+        return;
+    }
+
+    const post = {
+
+        id:Date.now(),
+
+        content:text,
+
+        likes:0,
+
+        comments:[]
+
+    };
+
+    posts.unshift(post);
+
+    localStorage.setItem("posts", JSON.stringify(posts));
+
+    document.getElementById("postText").value = "";
+
+    displayPosts();
+}
+
+/* DISPLAY POSTS */
+
+function displayPosts(){
+
+    const container = document.getElementById("postsContainer");
+
+    container.innerHTML = "";
+
+    posts.forEach(post => {
+
+        let commentsHTML = "";
+
+        post.comments.forEach(comment => {
+
+            commentsHTML += `
+                <div class="comment">
+                    ${comment}
+                </div>
+            `;
+        });
+
+        container.innerHTML += `
+
+        <div class="post">
+
+            <div class="post-header">
+
+                <img src="https://via.placeholder.com/50">
+
+                <div>
+                    <h3>John Doe</h3>
+                    <small>
+                        ${new Date(post.id).toLocaleString()}
+                    </small>
+                </div>
+
+            </div>
+
+            <div class="post-content">
+                ${post.content}
+            </div>
+
+            <div class="actions">
+
+                <button onclick="likePost(${post.id})">
+
+                    ❤️ Like (${post.likes})
+
+                </button>
+
+            </div>
+
+            <div class="comments">
+
+                <h4>Comments</h4>
+
+                ${commentsHTML}
+
+                <div class="comment-input">
+
+                    <input
+                        type="text"
+                        id="comment-${post.id}"
+                        placeholder="Write a comment"
+                    >
+
+                    <button onclick="addComment(${post.id})">
+
+                        Comment
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        `;
+    });
+}
+
+/* LIKE POST */
+
+function likePost(id){
+
+    posts = posts.map(post => {
+
+        if(post.id === id){
+
+            post.likes++;
+        }
+
+        return post;
+    });
+
+    localStorage.setItem("posts", JSON.stringify(posts));
+
+    displayPosts();
+}
+
+/* ADD COMMENT */
+
+function addComment(id){
+
+    const input = document.getElementById(`comment-${id}`);
+
+    const text = input.value;
+
+    if(text.trim() === ""){
+
+        alert("Write a comment");
+
+        return;
+    }
+
+    posts = posts.map(post => {
+
+        if(post.id === id){
+
+            post.comments.push(text);
+        }
+
+        return post;
+    });
+
+    localStorage.setItem("posts", JSON.stringify(posts));
+
+    displayPosts();
+}
+
+/* INITIAL LOAD */
+
+displayPosts();
+
+</script>
+
+</body>
+</html>
